@@ -1,0 +1,2 @@
+jangan perdetik, kalau pvc itu 15 detik, kaya harus ada validasi dulu
+dibagian status ada close oke  
