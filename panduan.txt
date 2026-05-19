@@ -1,0 +1,62 @@
+1. DAFTAR FILE & FUNGSINYA
+firmware_ssd.ino (Dijalankan di ESP32)
+
+Peran: Sebagai Slave (Unit Lapangan/Hardware).
+
+Fungsi Utama:
+
+Konektivitas: Menggunakan WiFiManager agar alat bisa terhubung ke WiFi lokal tanpa perlu hardcoding (setting via HP).
+
+Akuisisi Data: Membaca nilai analog mentah (ADC 0-4095) dari sensor NIR setiap 1 detik.
+
+Kendali Fisik: Mengatur Relay untuk Lampu (NIR Source) dan Pompa Udara.
+
+Safety Logic: Menjalankan logika saklar 3 kondisi (OFF, MANUAL, AUTO). Pada mode MANUAL, hardware bekerja mandiri tanpa menunggu perintah PC.
+
+Komunikasi: Mengirim data mentah ke PC melalui protokol Socket TCP/IP.
+
+engine.py (Dijalankan di PC/Laptop via VS Code)
+
+Peran: Sebagai Master (Otak Sistem/Logic).
+
+Fungsi Utama:
+
+Processing: Menerima data mentah dari ESP32 dan mengubahnya menjadi nilai Persen Moisture menggunakan rumus kalibrasi.
+
+Validasi (Triple-Check): Mengakumulasi data setiap 5 detik. Status ALARM hanya aktif jika 3 data terakhir berturut-turut (total 15 detik) berada di atas limit 1.50%.
+
+Database Management: Melakukan pengiriman data secara otomatis ke database MySQL (XAMPP) setiap siklus 5 detik selesai.
+
+Command Center: Mengirimkan instruksi balik ke ESP32 (seperti PUMP_ON atau PUMP_OFF) berdasarkan hasil pengolahan data pada mode AUTO.
+
+gui.py (Dijalankan di PC/Laptop via VS Code)
+
+Peran: Sebagai Interface (Visualisasi/HMI).
+
+Fungsi Utama:
+
+Dashboarding: Menampilkan antarmuka monitoring yang kaku (Rigid) dan profesional.
+
+Real-time Visualization: Merender grafik Trend H2O dan spektrum NIR secara live menggunakan Matplotlib.
+
+User Feedback: Memberikan peringatan suara (Beep) dan visual (Warna Merah) jika sistem dalam kondisi ALARM.
+
+Log Table: Menampilkan riwayat pembacaan terakhir dalam bentuk tabel agar mudah dipantau oleh operator.
+
+2. ALUR KERJA SISTEM (SOP)
+Inisialisasi Hardware:
+ESP32 dinyalakan -> Masuk ke mode WiFiManager -> Operator mengkoneksikan HP ke WiFi "ESP32_SSD_SETUP" -> Setting WiFi pabrik -> ESP32 mendapatkan IP Address.
+
+Koneksi Master-Slave:
+Python (gui.py) dijalankan di PC -> Mencari IP ESP32 -> Terjadi jabat tangan (handshake) melalui jaringan WiFi.
+
+Siklus Monitoring (Looping):
+
+Detik 1-4: ESP32 mengirim data ADC mentah -> Python menghitung moisture -> GUI memperbarui jam dan animasi grafik NIR.
+
+Detik 5 (Data Point): Python memasukkan data ke Buffer -> Melakukan pengecekan status (AMAN/ALARM).
+
+Feedback & Storage: Jika status ALARM, Python memerintahkan ESP32 menyalakan Pompa Udara -> Data disimpan secara permanen ke Database MySQL -> Log pada GUI diperbarui.
+
+Kendali Operator:
+Operator dapat melakukan Maximize pada grafik tertentu untuk analisis mendalam atau memindahkan saklar fisik ke MANUAL jika ingin melakukan pembersihan sensor secara mendadak.
